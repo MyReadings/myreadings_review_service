@@ -12,6 +12,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@io.quarkus.runtime.annotations.RegisterForReflection
 public class UserImpl implements User {
 
     @EqualsAndHashCode.Include

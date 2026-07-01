@@ -1,6 +1,7 @@
 package org.modular.playground.review.core.usecases;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.eclipse.microprofile.jwt.JsonWebToken;
@@ -18,4 +19,6 @@ public interface ReviewService {
     Review updateReview(UUID reviewId, ReviewRequestDTO reviewRequest, JsonWebToken principal); 
     void deleteReviewById(UUID reviewId, JsonWebToken principal);
     ReviewStatsImpl getReviewStatsForBook(UUID bookId);
+    Map<UUID, ReviewStatsImpl> getReviewStatsForBooks(List<UUID> bookIds);
+    List<Review> findReviewsByUserAndBooks(UUID userId, List<UUID> bookIds);
 }

@@ -79,12 +79,6 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     public List<Review> getReviewsForUser(UUID userId, JsonWebToken principal) {
         LOGGER.debugf("Getting reviews for user ID: %s", userId);
-        
-        if (userService.findUserProfileById(userId, principal).isEmpty()) {
-            LOGGER.warnf("User not found: %s. Cannot retrieve reviews.", userId);
-            return Collections.emptyList();
-        }
-
         List<Review> reviews = getUserReviewsInTransaction(userId);
         return enrichReviews(reviews);
     }
@@ -114,9 +108,6 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     public ReviewStatsImpl getReviewStatsForBook(UUID bookId) {
         LOGGER.debugf("Getting review stats for book ID: %s", bookId);
-        if (bookService.getBookById(bookId).isEmpty()) {
-            throw new NotFoundException("Book not found with ID: " + bookId);
-        }
         return getReviewStatsInTransaction(bookId);
     }
 
@@ -131,10 +122,7 @@ public class ReviewServiceImpl implements ReviewService {
         if (review == null)
             return null;
         User fullUser = userService.findUserByIdInternal(review.getUser().getKeycloakUserId()).orElse(review.getUser());
-        Book fullBook = bookService.getBookById(review.getBook().getBookId()).orElse(review.getBook());
-
         ((ReviewImpl) review).setUser(fullUser);
-        ((ReviewImpl) review).setBook(fullBook);
         return review;
     }
 
@@ -145,17 +133,13 @@ public class ReviewServiceImpl implements ReviewService {
 
         List<UUID> userIds = reviews.stream().map(r -> r.getUser().getKeycloakUserId()).distinct()
                 .collect(Collectors.toList());
-        List<UUID> bookIds = reviews.stream().map(r -> r.getBook().getBookId()).distinct().collect(Collectors.toList());
 
         Map<UUID, User> usersMap = userService.findUsersByIds(userIds).stream()
                 .collect(Collectors.toMap(User::getKeycloakUserId, Function.identity()));
-        Map<UUID, Book> booksMap = bookService.getBooksByIds(bookIds).stream()
-                .collect(Collectors.toMap(Book::getBookId, Function.identity()));
 
         reviews.forEach(review -> {
             ReviewImpl mutableReview = (ReviewImpl) review;
-            mutableReview.setUser(usersMap.get(review.getUser().getKeycloakUserId()));
-            mutableReview.setBook(booksMap.get(review.getBook().getBookId()));
+            mutableReview.setUser(usersMap.getOrDefault(review.getUser().getKeycloakUserId(), review.getUser()));
         });
 
         return reviews;
@@ -196,13 +180,37 @@ public class ReviewServiceImpl implements ReviewService {
         return reviewRepository.findByUserIdAndBookId(userId, bookId);
     }
 
+    @Override
+    public Map<UUID, ReviewStatsImpl> getReviewStatsForBooks(List<UUID> bookIds) {
+        if (bookIds == null || bookIds.isEmpty()) return Collections.emptyMap();
+        LOGGER.debugf("Getting batch review stats for %d books", bookIds.size());
+        Map<UUID, ReviewStatsImpl> stats = getReviewStatsBatchInTransaction(bookIds);
+        for (UUID bookId : bookIds) {
+            stats.putIfAbsent(bookId, ReviewStatsImpl.builder()
+                    .totalReviews(0L).averageRating(0.0).build());
+        }
+        return stats;
+    }
+
+    @Override
+    public List<Review> findReviewsByUserAndBooks(UUID userId, List<UUID> bookIds) {
+        if (bookIds == null || bookIds.isEmpty()) return Collections.emptyList();
+        LOGGER.debugf("Getting batch user reviews for user %s across %d books", userId, bookIds.size());
+        return findByUserIdAndBookIdsInTransaction(userId, bookIds);
+    }
+
+    @Transactional
+    protected Map<UUID, ReviewStatsImpl> getReviewStatsBatchInTransaction(List<UUID> bookIds) {
+        return reviewRepository.getReviewStatsBatch(bookIds);
+    }
+
+    @Transactional
+    protected List<Review> findByUserIdAndBookIdsInTransaction(UUID userId, List<UUID> bookIds) {
+        return reviewRepository.findByUserIdAndBookIds(userId, bookIds);
+    }
+
     @Transactional
     protected ReviewStatsImpl getReviewStatsInTransaction(UUID bookId) {
-        Long totalReviews = reviewRepository.countReviewsByBookId(bookId);
-        Double averageRating = reviewRepository.findAverageRatingByBookId(bookId);
-        return ReviewStatsImpl.builder()
-                .totalReviews(totalReviews)
-                .averageRating(averageRating == null ? 0.0 : averageRating)
-                .build();
+        return reviewRepository.getReviewStats(bookId);
     }
 }

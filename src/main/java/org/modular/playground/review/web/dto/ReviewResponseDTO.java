@@ -7,6 +7,7 @@ import java.util.UUID;
 
 @Data
 @Builder
+@io.quarkus.runtime.annotations.RegisterForReflection
 public class ReviewResponseDTO {
     private UUID reviewId;
     private UUID bookId;

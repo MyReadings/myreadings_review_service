@@ -5,6 +5,7 @@ import lombok.Data;
 
 @Data
 @Builder
+@io.quarkus.runtime.annotations.RegisterForReflection
 public class ReviewStatsResponseDTO {
     private String bookId;
     private long totalReviews;

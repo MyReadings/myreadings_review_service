@@ -8,11 +8,15 @@ import org.modular.playground.review.core.domain.Review;
 import org.modular.playground.review.core.usecases.repositories.ReviewRepository;
 import org.modular.playground.review.infrastructure.persistence.postgres.mapper.ReviewMapper;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
+import org.modular.playground.review.core.domain.ReviewStatsImpl;
 
 import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.hibernate.orm.PersistenceUnit;
@@ -96,21 +100,52 @@ public class JpaReviewRepository implements ReviewRepository {
     }
 
     @Override
-    public Long countReviewsByBookId(UUID bookId) {
-        LOGGER.debugf("JPA: Counting reviews for book ID: %s", bookId);
-        TypedQuery<Long> query = entityManager
-                .createQuery("SELECT COUNT(r) FROM ReviewEntity r WHERE r.bookId = :bookId", Long.class);
-        query.setParameter("bookId", bookId);
-        return query.getSingleResult();
+    @SuppressWarnings("unchecked")
+    public ReviewStatsImpl getReviewStats(UUID bookId) {
+        LOGGER.debugf("JPA: Getting review stats for book ID: %s", bookId);
+        Object[] row = (Object[]) entityManager
+                .createQuery("SELECT COUNT(r), AVG(r.rating) FROM ReviewEntity r WHERE r.bookId = :bookId")
+                .setParameter("bookId", bookId)
+                .getSingleResult();
+        Long count = (Long) row[0];
+        Double avg = (Double) row[1];
+        return ReviewStatsImpl.builder()
+                .totalReviews(count)
+                .averageRating(avg != null ? avg : 0.0)
+                .build();
     }
 
     @Override
-    public Double findAverageRatingByBookId(UUID bookId) {
-        LOGGER.debugf("JPA: Finding average rating for book ID: %s", bookId);
-        TypedQuery<Double> query = entityManager
-                .createQuery("SELECT AVG(r.rating) FROM ReviewEntity r WHERE r.bookId = :bookId", Double.class);
-        query.setParameter("bookId", bookId);
-        return query.getSingleResult();
+    @SuppressWarnings("unchecked")
+    public Map<UUID, ReviewStatsImpl> getReviewStatsBatch(List<UUID> bookIds) {
+        if (bookIds == null || bookIds.isEmpty()) return Collections.emptyMap();
+        LOGGER.debugf("JPA: Getting review stats batch for %d books", bookIds.size());
+        List<Object[]> results = entityManager.createQuery(
+                "SELECT r.bookId, COUNT(r), AVG(r.rating) FROM ReviewEntity r WHERE r.bookId IN :bookIds GROUP BY r.bookId")
+                .setParameter("bookIds", bookIds)
+                .getResultList();
+        Map<UUID, ReviewStatsImpl> statsMap = new HashMap<>();
+        for (Object[] row : results) {
+            UUID bookId = (UUID) row[0];
+            Long count = (Long) row[1];
+            Double avg = (Double) row[2];
+            statsMap.put(bookId, ReviewStatsImpl.builder()
+                    .totalReviews(count)
+                    .averageRating(avg != null ? avg : 0.0)
+                    .build());
+        }
+        return statsMap;
+    }
+
+    @Override
+    public List<Review> findByUserIdAndBookIds(UUID userId, List<UUID> bookIds) {
+        if (bookIds == null || bookIds.isEmpty()) return Collections.emptyList();
+        LOGGER.debugf("JPA: Finding reviews by user %s for %d books", userId, bookIds.size());
+        TypedQuery<ReviewEntity> query = entityManager.createQuery(
+                "SELECT r FROM ReviewEntity r WHERE r.userId = :userId AND r.bookId IN :bookIds", ReviewEntity.class);
+        query.setParameter("userId", userId);
+        query.setParameter("bookIds", bookIds);
+        return query.getResultList().stream().map(mapper::toDomain).collect(Collectors.toList());
     }
 
     @Override

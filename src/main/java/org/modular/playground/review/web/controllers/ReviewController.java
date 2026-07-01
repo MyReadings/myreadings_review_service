@@ -18,7 +18,9 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Path("/api/v1/reviews")
 @Produces(MediaType.APPLICATION_JSON)
@@ -116,6 +118,31 @@ public class ReviewController {
         List<Review> reviews = reviewService.getReviewsForUser(userId, jwt);
         List<ReviewResponseDTO> response = reviewMapper.toResponseDTOs(reviews);
         LOGGER.debugf("Found %d reviews for user ID: %s", response.size(), userId);
+        return Response.ok(response).build();
+    }
+
+    @POST
+    @Path("/books/batch/stats")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"user", "admin"})
+    public Response getReviewStatsBatch(List<UUID> bookIds) {
+        LOGGER.infof("Received batch stats request for %d books", bookIds != null ? bookIds.size() : 0);
+        Map<UUID, ReviewStatsImpl> stats = reviewService.getReviewStatsForBooks(bookIds);
+        List<ReviewStatsResponseDTO> response = stats.entrySet().stream()
+                .map(e -> reviewMapper.toStatsResponseDTO(e.getValue(), e.getKey()))
+                .collect(Collectors.toList());
+        return Response.ok(response).build();
+    }
+
+    @POST
+    @Path("/books/batch/my-reviews")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"user", "admin"})
+    public Response getMyReviewsBatch(List<UUID> bookIds) {
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+        LOGGER.infof("Received batch my-reviews request for user %s across %d books", currentUserId, bookIds != null ? bookIds.size() : 0);
+        List<Review> reviews = reviewService.findReviewsByUserAndBooks(currentUserId, bookIds);
+        List<ReviewResponseDTO> response = reviewMapper.toResponseDTOs(reviews);
         return Response.ok(response).build();
     }
 }

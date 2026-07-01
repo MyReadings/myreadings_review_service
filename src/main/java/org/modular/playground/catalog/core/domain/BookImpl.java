@@ -17,6 +17,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@io.quarkus.runtime.annotations.RegisterForReflection
 public class BookImpl implements Book {
 
     @EqualsAndHashCode.Include

@@ -13,6 +13,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@io.quarkus.runtime.annotations.RegisterForReflection
 public class ReviewRequestDTO {
     @NotNull(message = "Book ID is mandatory")
     private UUID bookId;

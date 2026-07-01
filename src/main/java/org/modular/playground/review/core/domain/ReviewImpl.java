@@ -15,6 +15,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@io.quarkus.runtime.annotations.RegisterForReflection
 public class ReviewImpl implements Review {
 
     @EqualsAndHashCode.Include
