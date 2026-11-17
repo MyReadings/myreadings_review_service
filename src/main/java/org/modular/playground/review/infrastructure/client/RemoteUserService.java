@@ -3,6 +3,8 @@ package org.modular.playground.review.infrastructure.client;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.ServiceUnavailableException;
+import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.modular.playground.user.core.domain.User;
@@ -54,7 +56,7 @@ public class RemoteUserService implements UserService {
             return dtos.stream().map(this::toUser).collect(Collectors.toList());
         } catch (Exception e) {
             LOGGER.errorf(e, "Failed to fetch users from user-service");
-            return Collections.emptyList();
+            throw new ServiceUnavailableException("User service is unavailable", Response.status(503).build(), e);
         }
     }
 
