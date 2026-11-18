@@ -4,6 +4,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.ClientErrorException;
+import org.modular.playground.review.core.usecases.repositories.DuplicateReviewException;
 import jakarta.ws.rs.NotFoundException;
 import org.modular.playground.catalog.core.domain.Book;
 import org.modular.playground.catalog.core.usecases.BookService;
@@ -43,6 +45,10 @@ public class ReviewServiceImpl implements ReviewService {
         UUID bookId = reviewRequest.getBookId();
         LOGGER.infof("Attempting to create review for book %s by user %s", bookId, userId);
 
+        if (findByUserIdAndBookIdInTransaction(userId, bookId).isPresent()) {
+            throw new ClientErrorException("A review already exists for this user and book", 409);
+        }
+
         Book book = bookService.getBookById(bookId)
                 .orElseThrow(() -> new NotFoundException("Book not found: " + bookId));
         User user = userService.findUserProfileById(userId, principal)
@@ -50,7 +56,12 @@ public class ReviewServiceImpl implements ReviewService {
 
         Review reviewToCreate = reviewMapper.toDomain(reviewRequest, user, book);
 
-        return createInTransaction(reviewToCreate);
+        try {
+            return createInTransaction(reviewToCreate);
+        } catch (DuplicateReviewException e) {
+            // The transaction has rolled back before mapping a concurrent create to HTTP 409.
+            throw new ClientErrorException(e.getMessage(), 409, e);
+        }
     }
 
     @Override

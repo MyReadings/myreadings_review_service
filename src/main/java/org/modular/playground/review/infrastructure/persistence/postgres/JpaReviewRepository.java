@@ -4,6 +4,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
+import org.hibernate.exception.ConstraintViolationException;
+import org.modular.playground.review.core.usecases.repositories.DuplicateReviewException;
 import org.modular.playground.review.core.domain.Review;
 import org.modular.playground.review.core.usecases.repositories.ReviewRepository;
 import org.modular.playground.review.infrastructure.persistence.postgres.mapper.ReviewMapper;
@@ -38,7 +40,16 @@ public class JpaReviewRepository implements ReviewRepository {
     public Review create(Review review) {
         LOGGER.debugf("JPA: Creating review entity with ID: %s", review.getReviewId());
         ReviewEntity newEntity = mapper.toEntity(review);
-        entityManager.persist(newEntity);
+        try {
+            entityManager.persist(newEntity);
+            // Surface the uniqueness violation before leaving the transaction boundary.
+            entityManager.flush();
+        } catch (ConstraintViolationException e) {
+            if ("uk_reviews_user_book".equals(e.getConstraintName())) {
+                throw new DuplicateReviewException(e);
+            }
+            throw e;
+        }
         return mapper.toDomain(newEntity);
     }
 

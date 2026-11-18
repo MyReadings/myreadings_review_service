@@ -12,7 +12,8 @@ import java.util.UUID;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
 @Entity
-@Table(name = "reviews")
+@Table(name = "reviews", uniqueConstraints = @UniqueConstraint(
+        name = "uk_reviews_user_book", columnNames = {"user_id", "book_id"}))
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Builder
