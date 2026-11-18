@@ -9,6 +9,7 @@
     <packaging>jar</packaging>
     <name>MyReadings :: Review Service</name>
     <properties>
+        <common-utils.version>1.0.1</common-utils.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
@@ -33,7 +34,7 @@
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/too-common-name/myreadings_utils</url>
+            <url>https://maven.pkg.github.com/myreadings/myreadings_utils</url>
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
@@ -43,12 +44,12 @@
         <dependency>
             <groupId>org.modular.playground</groupId>
             <artifactId>common-utils</artifactId>
-            <version>${project.version}</version>
+            <version>${common-utils.version}</version>
         </dependency>
         <dependency>
             <groupId>org.modular.playground</groupId>
             <artifactId>common-utils</artifactId>
-            <version>${project.version}</version>
+            <version>${common-utils.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
