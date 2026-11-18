@@ -3,6 +3,7 @@ package org.modular.playground.review.web.controllers;
 import io.quarkus.security.Authenticated;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.validation.constraints.*;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -41,7 +42,7 @@ public class ReviewController {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @RolesAllowed({"user", "admin"})
-    public Response createReview(@Valid ReviewRequestDTO createReviewRequestDTO) {
+    public Response createReview(@NotNull @Valid ReviewRequestDTO createReviewRequestDTO) {
         LOGGER.infof("Received request to create review for book ID: %s", createReviewRequestDTO.getBookId());
         Review createdReview = reviewService.createReview(createReviewRequestDTO, jwt);
         LOGGER.info("Review created successfully.");
@@ -61,7 +62,7 @@ public class ReviewController {
     @Path("/{reviewId}")
     @Consumes(MediaType.APPLICATION_JSON)
     @RolesAllowed({"user", "admin"})
-    public Response updateReview(@PathParam("reviewId") UUID reviewId, @Valid ReviewRequestDTO updateReviewRequestDTO) {
+    public Response updateReview(@PathParam("reviewId") UUID reviewId, @NotNull @Valid ReviewRequestDTO updateReviewRequestDTO) {
         LOGGER.infof("Received request to update review with ID: %s", reviewId);
         Review updatedReview = reviewService.updateReview(reviewId, updateReviewRequestDTO, jwt);
         LOGGER.info("Review updated successfully.");
@@ -125,7 +126,7 @@ public class ReviewController {
     @Path("/books/batch/stats")
     @Consumes(MediaType.APPLICATION_JSON)
     @RolesAllowed({"user", "admin"})
-    public Response getReviewStatsBatch(List<UUID> bookIds) {
+    public Response getReviewStatsBatch(@NotNull @Size(max = 500) List<@NotNull UUID> bookIds) {
         LOGGER.infof("Received batch stats request for %d books", bookIds != null ? bookIds.size() : 0);
         Map<UUID, ReviewStatsImpl> stats = reviewService.getReviewStatsForBooks(bookIds);
         List<ReviewStatsResponseDTO> response = stats.entrySet().stream()
@@ -138,7 +139,7 @@ public class ReviewController {
     @Path("/books/batch/my-reviews")
     @Consumes(MediaType.APPLICATION_JSON)
     @RolesAllowed({"user", "admin"})
-    public Response getMyReviewsBatch(List<UUID> bookIds) {
+    public Response getMyReviewsBatch(@NotNull @Size(max = 500) List<@NotNull UUID> bookIds) {
         UUID currentUserId = UUID.fromString(jwt.getSubject());
         LOGGER.infof("Received batch my-reviews request for user %s across %d books", currentUserId, bookIds != null ? bookIds.size() : 0);
         List<Review> reviews = reviewService.findReviewsByUserAndBooks(currentUserId, bookIds);

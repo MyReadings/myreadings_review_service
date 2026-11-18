@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 @Data
@@ -23,5 +24,6 @@ public class ReviewRequestDTO {
     @Max(5)
     private int rating;
 
+    @Size(max = 200)
     private String reviewText;
 }
