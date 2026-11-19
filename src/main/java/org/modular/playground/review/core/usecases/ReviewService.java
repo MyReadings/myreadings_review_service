@@ -1,5 +1,7 @@
 package org.modular.playground.review.core.usecases;
 
+import org.modular.playground.review.core.domain.PageResult;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -14,8 +16,8 @@ public interface ReviewService {
     Optional<Review> findReviewById(UUID reviewId, JsonWebToken principal);
     Review findReviewAndCheckOwnership(UUID reviewId, JsonWebToken principal);
     Optional<Review> findReviewByUserAndBook(UUID userId, UUID bookId, JsonWebToken principal);
-    List<Review> getReviewsForBook(UUID bookId, JsonWebToken principal);
-    List<Review> getReviewsForUser(UUID userId, JsonWebToken principal);
+    PageResult<Review> getReviewsForBook(UUID bookId, int page, int size, JsonWebToken principal);
+    PageResult<Review> getReviewsForUser(UUID userId, int page, int size, JsonWebToken principal);
     Review updateReview(UUID reviewId, ReviewRequestDTO reviewRequest, JsonWebToken principal); 
     void deleteReviewById(UUID reviewId, JsonWebToken principal);
     ReviewStatsImpl getReviewStatsForBook(UUID bookId);

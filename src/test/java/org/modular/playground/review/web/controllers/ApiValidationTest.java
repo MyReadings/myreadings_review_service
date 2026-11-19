@@ -45,5 +45,18 @@ public class ApiValidationTest {
     void tooLongReviewTextIsRejectedBeforeCallingOtherServices() {
         given().contentType("application/json").body("{\"bookId\":\"00000000-0000-0000-0000-000000000001\",\"rating\":4,\"reviewText\":\"" + "x".repeat(201) + "\"}")
             .post("/api/v1/reviews").then().statusCode(400);
+    }    @Test
+    void invalidCollectionPagesAreRejected() {
+        for (String path : new String[] {"/api/v1/reviews/users/00000000-0000-0000-0000-000000000001","/api/v1/reviews/books/00000000-0000-0000-0000-000000000001"}) {
+            for (String query : new String[] {"page=-1", "page=2147483647", "size=0", "size=101"}) {
+                given().get(path + "?" + query).then().statusCode(400);
+            }
+        }
     }
+    @Test
+    void anEmptyReviewPageReportsCompletion() {
+        given().get("/api/v1/reviews/books/00000000-0000-0000-0000-000000000001?page=1&size=2")
+                .then().statusCode(200).header("X-Has-More", "false").body("size()", org.hamcrest.Matchers.is(0));
+    }
+
 }

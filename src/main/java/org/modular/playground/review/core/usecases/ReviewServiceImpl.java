@@ -1,5 +1,7 @@
 package org.modular.playground.review.core.usecases;
 
+import org.modular.playground.review.core.domain.PageResult;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -81,17 +83,17 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     @Override
-    public List<Review> getReviewsForBook(UUID bookId, JsonWebToken principal) {
+    public PageResult<Review> getReviewsForBook(UUID bookId, int page, int size, JsonWebToken principal) {
         LOGGER.debugf("Getting reviews for book ID: %s", bookId);
-        List<Review> reviews = getBookReviewsInTransaction(bookId);
-        return enrichReviews(reviews);
+        var result = PageResult.from(getBookReviewsInTransaction(bookId, page * size, size + 1), size);
+        return new PageResult<>(enrichReviews(result.content()), result.hasMore());
     }
 
     @Override
-    public List<Review> getReviewsForUser(UUID userId, JsonWebToken principal) {
+    public PageResult<Review> getReviewsForUser(UUID userId, int page, int size, JsonWebToken principal) {
         LOGGER.debugf("Getting reviews for user ID: %s", userId);
-        List<Review> reviews = getUserReviewsInTransaction(userId);
-        return enrichReviews(reviews);
+        var result = PageResult.from(getUserReviewsInTransaction(userId, page * size, size + 1), size);
+        return new PageResult<>(enrichReviews(result.content()), result.hasMore());
     }
 
     @Override
@@ -172,13 +174,13 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     @Transactional
-    protected List<Review> getBookReviewsInTransaction(UUID bookId) {
-        return reviewRepository.getBookReviews(bookId);
+    protected List<Review> getBookReviewsInTransaction(UUID bookId, int offset, int limit) {
+        return reviewRepository.getBookReviews(bookId, offset, limit);
     }
 
     @Transactional
-    protected List<Review> getUserReviewsInTransaction(UUID userId) {
-        return reviewRepository.getUserReviews(userId);
+    protected List<Review> getUserReviewsInTransaction(UUID userId, int offset, int limit) {
+        return reviewRepository.getUserReviews(userId, offset, limit);
     }
 
     @Transactional

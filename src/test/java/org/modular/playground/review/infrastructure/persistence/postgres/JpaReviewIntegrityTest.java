@@ -82,6 +82,27 @@ public class JpaReviewIntegrityTest {
         assertEquals(1L, count());
     }
 
+    @Test
+    void reviewPagesAreBoundedStableAndDoNotOverlap() {
+        var user = UUID.randomUUID();
+        for (int i = 0; i < 5; i++) create(user, UUID.randomUUID());
+        QuarkusTransaction.requiringNew().run(() -> {
+            var first = repository.getUserReviews(user, 0, 2);
+            var second = repository.getUserReviews(user, 2, 2);
+            var last = repository.getUserReviews(user, 4, 2);
+            assertEquals(2, first.size());
+            assertEquals(2, second.size());
+            assertEquals(1, last.size());
+            var ids = java.util.stream.Stream.of(first, second, last).flatMap(java.util.List::stream)
+                    .map(r -> r.getReviewId()).toList();
+            assertEquals(5, new java.util.HashSet<>(ids).size());
+            assertEquals(ids.subList(0, 2), repository.getUserReviews(user, 0, 2).stream().map(r -> r.getReviewId()).toList());
+            assertTrue(first.get(0).getPublicationDate().compareTo(last.get(0).getPublicationDate()) >= 0);
+            assertTrue(repository.getUserReviews(user, 5, 2).isEmpty());
+            assertEquals(1, repository.getBookReviews(first.get(0).getBook().getBookId(), 0, 2).size());
+        });
+    }
+
     private long count() {
         return QuarkusTransaction.requiringNew().call(() -> entityManager.createQuery("SELECT COUNT(r) FROM ReviewEntity r", Long.class).getSingleResult());
     }

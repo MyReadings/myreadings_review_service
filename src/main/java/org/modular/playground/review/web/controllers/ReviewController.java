@@ -82,12 +82,14 @@ public class ReviewController {
     @GET
     @Path("/books/{bookId}")
     @RolesAllowed({"user", "admin"})
-    public Response getReviewsByBookId(@PathParam("bookId") UUID bookId) {
+    public Response getReviewsByBookId(@PathParam("bookId") UUID bookId,
+            @DefaultValue("0") @Min(0) @Max(1000000) @QueryParam("page") int page,
+            @DefaultValue("100") @Min(1) @Max(100) @QueryParam("size") int size) {
         LOGGER.infof("Received request to get reviews for book ID: %s", bookId);
-        List<Review> reviews = reviewService.getReviewsForBook(bookId, jwt);
-        List<ReviewResponseDTO> response = reviewMapper.toResponseDTOs(reviews);
+        var result = reviewService.getReviewsForBook(bookId, page, size, jwt);
+        List<ReviewResponseDTO> response = reviewMapper.toResponseDTOs(result.content());
         LOGGER.debugf("Found %d reviews for book ID: %s", response.size(), bookId);
-        return Response.ok(response).build();
+        return Response.ok(response).header("X-Has-More", result.hasMore()).build();
     }
 
     @GET
@@ -114,12 +116,14 @@ public class ReviewController {
     @GET
     @Path("/users/{userId}")
     @RolesAllowed({"user", "admin"})
-    public Response getReviewsByUserId(@PathParam("userId") UUID userId) {
+    public Response getReviewsByUserId(@PathParam("userId") UUID userId,
+            @DefaultValue("0") @Min(0) @Max(1000000) @QueryParam("page") int page,
+            @DefaultValue("100") @Min(1) @Max(100) @QueryParam("size") int size) {
         LOGGER.infof("Received request to get reviews for user ID: %s", userId);
-        List<Review> reviews = reviewService.getReviewsForUser(userId, jwt);
-        List<ReviewResponseDTO> response = reviewMapper.toResponseDTOs(reviews);
+        var result = reviewService.getReviewsForUser(userId, page, size, jwt);
+        List<ReviewResponseDTO> response = reviewMapper.toResponseDTOs(result.content());
         LOGGER.debugf("Found %d reviews for user ID: %s", response.size(), userId);
-        return Response.ok(response).build();
+        return Response.ok(response).header("X-Has-More", result.hasMore()).build();
     }
 
     @POST

@@ -13,8 +13,8 @@ public interface ReviewRepository {
     Optional<Review> findById(UUID reviewId);
     Optional<Review> findByUserIdAndBookId(UUID userId, UUID bookId);
     void deleteById(UUID reviewId);
-    List<Review> getBookReviews(UUID bookId);
-    List<Review> getUserReviews(UUID userId);
+    List<Review> getBookReviews(UUID bookId, int offset, int limit);
+    List<Review> getUserReviews(UUID userId, int offset, int limit);
     ReviewStatsImpl getReviewStats(UUID bookId);
     Map<UUID, ReviewStatsImpl> getReviewStatsBatch(List<UUID> bookIds);
     List<Review> findByUserIdAndBookIds(UUID userId, List<UUID> bookIds);

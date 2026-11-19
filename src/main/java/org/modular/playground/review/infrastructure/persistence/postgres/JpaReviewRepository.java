@@ -81,20 +81,24 @@ public class JpaReviewRepository implements ReviewRepository {
     }
 
     @Override
-    public List<Review> getBookReviews(UUID bookId) {
+    public List<Review> getBookReviews(UUID bookId, int offset, int limit) {
         LOGGER.debugf("JPA: Getting reviews for book ID: %s", bookId);
         TypedQuery<ReviewEntity> query = entityManager
-                .createQuery("SELECT r FROM ReviewEntity r WHERE r.bookId = :bookId", ReviewEntity.class);
+                .createQuery("SELECT r FROM ReviewEntity r WHERE r.bookId = :bookId ORDER BY r.publicationDate DESC, r.reviewId", ReviewEntity.class);
         query.setParameter("bookId", bookId);
+        query.setFirstResult(offset);
+        query.setMaxResults(limit);
         return query.getResultList().stream().map(mapper::toDomain).collect(Collectors.toList());
     }
 
     @Override
-    public List<Review> getUserReviews(UUID userId) {
+    public List<Review> getUserReviews(UUID userId, int offset, int limit) {
         LOGGER.debugf("JPA: Getting reviews for user ID: %s", userId);
         TypedQuery<ReviewEntity> query = entityManager
-                .createQuery("SELECT r FROM ReviewEntity r WHERE r.userId = :userId", ReviewEntity.class);
+                .createQuery("SELECT r FROM ReviewEntity r WHERE r.userId = :userId ORDER BY r.publicationDate DESC, r.reviewId", ReviewEntity.class);
         query.setParameter("userId", userId);
+        query.setFirstResult(offset);
+        query.setMaxResults(limit);
         return query.getResultList().stream().map(mapper::toDomain).collect(Collectors.toList());
     }
 
