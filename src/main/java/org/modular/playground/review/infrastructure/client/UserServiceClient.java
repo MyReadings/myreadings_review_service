@@ -5,11 +5,13 @@ import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.faulttolerance.CircuitBreaker;
 import org.eclipse.microprofile.faulttolerance.Timeout;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.modular.playground.user.web.dto.UserResponseDTO;
 
 import java.util.List;
 import java.util.UUID;
 
+@RegisterClientHeaders
 @RegisterRestClient(configKey = "user-service")
 @Path("/api/internal/users")
 @Produces(MediaType.APPLICATION_JSON)
